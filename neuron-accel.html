@@ -1,0 +1,61 @@
+<link rel="import" href="../neuron-base/neuron-base.html">
+
+
+<dom-module id="neuron-accel">
+  <style>
+			:host{
+				display: flex;
+			}
+			:host p{
+				margin: 3px;
+			}
+
+			:host p.disconnected{
+				background: rgba(255,255,255, 0.5);
+				color: gray;
+			}
+		</style>
+  <template>
+
+		<template is="dom-repeat" items="{{neuronValues}}" as="value" index-as="i">
+			<p class$="{{state}}"><span>{{label}}</span> <span>{{trunc(value)}}</span> <span>{{unit}}</span></p>
+		</template>
+
+		<shadow></shadow>
+	</template>
+</dom-module>
+<script>
+	Polymer({
+		is: 'neuron-accel',
+		behaviors: [DiyaBehaviors.Neuron],
+		properties: {
+			factor: { type: Number, value: 1, notify: true },
+			label: { type: String, value: '', notify: true },
+			truncate: { type: Number, value: 3, notify: true },
+			unit: { type: String, value: '', notify: true }
+		},
+
+		ready: function () {
+			if (window.DeviceOrientationEvent) {
+				window.addEventListener("deviceorientation", function (event) {
+					console.log([event.beta, event.gamma]);
+				}, true);
+			} else if (window.DeviceMotionEvent) {
+				window.addEventListener('devicemotion', function (event) {
+					console.log([event.acceleration.x * 2, event.acceleration.y * 2]);
+				}, true);
+			} else {
+				window.addEventListener("MozOrientation", function (event) {
+					console.log([orientation.x * 50, orientation.y * 50]);
+				}, true);
+			}
+		},
+
+		trunc: function (value) {
+			if (value === undefined) return 0;
+			if (this.truncate >= 0) return (value * this.factor).toFixed(this.truncate);
+			return value;
+		},
+
+	});
+</script>
