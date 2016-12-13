@@ -16,10 +16,11 @@
 			}
 		</style>
   <template>
-
-		<template is="dom-repeat" items="{{neuronValues}}" as="value" index-as="i">
-			<p class$="{{state}}"><span>{{label}}</span> <span>{{trunc(value)}}</span> <span>{{unit}}</span></p>
-		</template>
+	<!-- <p class$="{{state}}"><div>{{logAccel}}</div> <div>{{logRot}}</div></p> -->
+		<div id="logAccel">
+		</div>
+		<div id="logRot">
+		</div>
 
 		<shadow></shadow>
 	</template>
@@ -31,26 +32,49 @@
 		properties: {
 			factor: { type: Number, value: 1, notify: true },
 			label: { type: String, value: '', notify: true },
-			truncate: { type: Number, value: 3, notify: true },
-			unit: { type: String, value: '', notify: true }
+			truncate: { type: Number, value: 3, notify: true }
 		},
 
 		ready: function () {
-			if (window.DeviceOrientationEvent) {
-				window.addEventListener("deviceorientation", function (event) {
-					console.log([event.beta, event.gamma]);
-				}, true);
-			} else if (window.DeviceMotionEvent) {
-				window.addEventListener('devicemotion', function (event) {
-					console.log([event.acceleration.x * 2, event.acceleration.y * 2]);
-				}, true);
-			} else {
-				window.addEventListener("MozOrientation", function (event) {
-					console.log([orientation.x * 50, orientation.y * 50]);
-				}, true);
-			}
+			this.frequency = 20;
 		},
 
+		attached: function() {
+			var that = this;
+
+			function onOrientation (event) {
+				that.neuronValues[3] = event.alpha || 0;
+				that.neuronValues[4] = event.beta || 0;
+				that.neuronValues[5] = event.gamma || 0;
+				that.logRot= "<ul><li>alpha : " + that.trunc(that.neuronValues[3]) + "</li><li>beta : " + that.trunc(that.neuronValues[4]) + "</li><li>gamma : " + that.trunc(that.neuronValues[5]) + "</li></ul>";
+				document.getElementById('logRot').innerHTML = that.logRot;
+				if(that.neuron)
+					that.sendAll();
+			};
+			function onMotion (event) {
+				that.neuronValues[0] = event.accelerationIncludingGravity.x || 0;
+				that.neuronValues[1] = event.accelerationIncludingGravity.y || 0;
+				that.neuronValues[2] = event.accelerationIncludingGravity.z || 0;
+				that.logAccel="<ul><li>X : " + that.trunc(that.neuronValues[0]) + "</li><li>Y : " + that.trunc(that.neuronValues[1]) + "</li><li>Z : " + that.trunc(that.neuronValues[2]) + "</li></ul>";
+				document.getElementById('logAccel').innerHTML = that.logAccel;
+;
+				if(that.neuron)
+					that.sendAll();
+			};
+
+			if(window.DeviceOrientationEvent) {
+				window.addEventListener("deviceorientation", onOrientation, true);
+			} else {
+				// Le navigateur ne supporte pas l'événement deviceorientation
+				console.log("DeviceOrientation does not work now");
+			}
+			if(window.DeviceMotionEvent) {
+				window.addEventListener("devicemotion", onMotion, true);
+			} else {
+				// Le navigateur ne supporte pas l'événement devicemotion
+				console.log("DeviceMotion does not work now");
+			}
+		},
 		trunc: function (value) {
 			if (value === undefined) return 0;
 			if (this.truncate >= 0) return (value * this.factor).toFixed(this.truncate);
